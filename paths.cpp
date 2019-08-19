@@ -279,14 +279,12 @@ vecofvecs remove_dash(vecofvecs genes){
 }
 
 class neighbor{
-
 	matrix path;
 	vecofvecs genes;
-
 	int deltacost;
-
+	int postition;
 public:
-	neighbor(matrix path1, vecofvecs genes1, int cost1){
+	neighbor(matrix path1, vecofvecs genes1, int cost1, int postition1){
 		path = path1;
 
 		// cout << "Final Path " << endl;
@@ -300,11 +298,17 @@ public:
 		deltacost = total_genes_cost(genes) - cost1;
 
 		// cout << "Final Cost: " << total_genes_cost(genes) << endl;
+
+		postition = postition1;
+
+		// cout << "Position: " << postition << endl;		
 	}
 
-	int get_deltacost(){
-		return deltacost;
-	}
+	int get_deltacost(){return deltacost;}
+	matrix get_path(){return path;}
+	vecofvecs get_genes(){return genes;}
+	int get_position(){return postition;}
+
 };
 
 
@@ -381,49 +385,113 @@ int main(int argc, char const *argv[])
 	matrix pa = state_initialize(f, &step_dict);
 	vecofvecs ge = create_genseq(pa,genes);
 
-	// print_matrix(pa);
-	// print_vecofvecs(ge);
-	// cout << "--------------------------------" <<endl;
+	print_matrix(pa);
+	print_vecofvecs(ge);
+	cout << "Initial Cost : " << total_genes_cost(ge) << endl;
+	cout << "--------------------------------" <<endl;
 
-	vector<neighbor> list_neighbors;
-	// neighbor temp_neighbor();
-	matrix temp_path;
-	int temp_cost;
-	int r;
 
-	std::vector<int> buf;
-	for (int i = 0; i < n_neighbors; ++i){
+	int climbs = 0;
+
+	while(true){
+
+		vector<int> least_cost_info = {0,-1}; // {cost,index}
+
+		vector<neighbor> list_neighbors;
+		matrix temp_path;
+		int temp_cost;
+		int r;
+
+		// std::vector<int> buf;
+
+
+		for (int i = 0; i < n_neighbors; ++i){
 		
-		// cout << "Neighbor: " << i << endl;
+			// cout << "Neighbor: " << i << endl;
 
-		r = random(0,pa.size() - 3);
+			r = random(0,pa.size() - 3);
 
-		// cout << "Initial Path " << endl;//
-		// matrix ange(&pa[r], &pa[r+3] );//
-		// print_matrix(ange);//
+			// cout << "Initial Path " << endl;//
+			// matrix ange(&pa[r], &pa[r+3] );//
+			// print_matrix(ange);//
 
-		temp_path = gen_path( pa[r], pa[r+2], &step_dict );
+			temp_path = gen_path( pa[r], pa[r+2], &step_dict );
 
-		vecofvecs temp_genes( &ge[r], &ge[r+2]);
+			vecofvecs temp_genes( &ge[r], &ge[r+2]);
 		
-		// cout << "Initial Seq " <<endl;//
-		// print_vecofvecs(temp_genes);//
+			// cout << "Initial Seq " <<endl;//
+			// print_vecofvecs(temp_genes);//
 
-		temp_cost = total_genes_cost( temp_genes);
-		// cout << "check" << endl;
-		// cout << "Initial Cost: " << temp_cost << endl;//
+			temp_cost = total_genes_cost( temp_genes);
+			// cout << "check" << endl;
+			// cout << "Initial Cost: " << temp_cost << endl;//
 
-		neighbor temp_neighbor = neighbor( temp_path, remove_dash(temp_genes), temp_cost);
+			neighbor temp_neighbor = neighbor( temp_path, remove_dash(temp_genes), temp_cost, r+1);
 
-		list_neighbors.push_back(temp_neighbor );
+			list_neighbors.push_back(temp_neighbor);
 
-		if (temp_neighbor.get_deltacost() < 0){
-			buf.push_back(temp_neighbor.get_deltacost());
+			if(least_cost_info[0] > temp_neighbor.get_deltacost()){
+				least_cost_info[0] = temp_neighbor.get_deltacost();
+				least_cost_info[1] = i;
+			}
+			// if (temp_neighbor.get_deltacost() < 0){
+			// 	buf.push_back(temp_neighbor.get_deltacost());
+			// }
 		}
 
+		if(least_cost_info[0] >= 0){
+			cout << climbs << endl;
+			break;
+		}
+
+		climbs = climbs + 1;
+
+		neighbor selected_neighbor = list_neighbors[least_cost_info[1]];
+
+		// print_matrix(selected_neighbor.get_path());
+		// print_vecofvecs(selected_neighbor.get_genes());
+		// cout << "--------------------------------" <<endl;
+
+		int pos = selected_neighbor.get_position();
+		auto it  = pa.begin() + pos;
+		auto it1 = pa.begin() + pos + 2; 
+		pa.erase(it, it1);
+		auto it2 = ge.begin() + pos - 1;
+		auto it3 = ge.begin() + pos + 1;
+		ge.erase(it2, it3);
+
+		// print_matrix(pa);
+		// print_vecofvecs(ge);
+		// cout << "--------------------------------" <<endl;
+		// cout << pos << endl;
+
+		auto it4  = pa.begin() + pos;
+		auto it5 = ge.begin() + pos - 1; 
+		matrix selected_path  = selected_neighbor.get_path();
+		vecofvecs selected_genes = selected_neighbor.get_genes();  
+		pa.insert(it4, selected_path.begin() + 1, selected_path.end() );
+
+		ge.insert(it5, selected_genes.begin(), selected_genes.end() );
+	
+		// print_matrix(pa);
+		// print_vecofvecs(ge);
+		// cout << "--------------------------------" <<endl;
 	}
 
-	print_intvector(buf);
+	print_matrix(pa);
+	print_vecofvecs(ge);
+	cout << "Initial Cost : " << total_genes_cost(ge) << endl;
+	cout << "--------------------------------" <<endl;
+
+
+
+	// print_intvector(buf);
+
+	// std::vector<int> v = {1,2,3,4};
+	// std::vector<int> v1 = {5,6,7,100};
+
+	// v.insert(v.begin() + 1, v1.begin(), v1.end());
+	// print_intvector(v);
 
 
 
