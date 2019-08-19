@@ -328,7 +328,7 @@ int main(int argc, char const *argv[])
 
 
 
-	int max_search = 100000;
+	int max_search = 1000;
 
 	srand(time(0));
 	std::vector<int> f;
@@ -382,9 +382,19 @@ int main(int argc, char const *argv[])
 		neighbor temp_neighbor = neighbor( temp_path, remove_dash(temp_genes), temp_cost, r+1);
 
 		climbs = climbs + 1;
-		if(temp_neighbor.get_deltacost() < 0){
 
-			search_fresh = 0;
+		if(temp_neighbor.get_deltacost() <= 0){
+			if(temp_neighbor.get_deltacost() == 0 and search_fresh > max_search){
+				cout << climbs << endl;
+				break;
+			}
+			else if(temp_neighbor.get_deltacost() < 0){
+				search_fresh = 0;
+			}
+			else{
+				search_fresh = search_fresh + 1;
+			}
+			
 			// print_matrix(selected_neighbor.get_path());
 			// print_vecofvecs(selected_neighbor.get_genes());
 			// cout << "--------------------------------" <<endl;
@@ -414,11 +424,6 @@ int main(int argc, char const *argv[])
 			// print_vecofvecs(ge);
 			// cout << "--------------------------------" <<endl;
 
-		}
-
-		else if(temp_neighbor.get_deltacost() >= 0 and search_fresh > max_search){
-			cout << climbs << endl;
-			break;
 		}
 		
 	}
