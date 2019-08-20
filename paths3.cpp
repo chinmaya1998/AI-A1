@@ -382,10 +382,6 @@ int main(int argc, char const *argv[]){
 
 
 
-
-	int max_search = 1000;
-	int restarts = 1000;
-
 	srand(time(0));
 	std::vector<int> f;
 	for (int i = 0; i < genes.size(); ++i){
@@ -398,7 +394,7 @@ int main(int argc, char const *argv[]){
 
 	matrix pa = state_initialize(f, &step_dict);
 	vecofvecs ge = create_genseq(pa,genes);
-	cout << "Initial Cost : " << total_genes_cost(ge) << endl;
+	// cout << "Initial Cost : " << total_genes_cost(ge) << endl;
 
 
 	// print_matrix(pa);
@@ -408,16 +404,23 @@ int main(int argc, char const *argv[]){
 
 	solution sol = solution(pa, ge);
 
+	int step_size_limit = 4;
+	int check_neighbors = 100;
+	int max_search = 80;
+	int restarts = 100;
+
 	for (int q = 0; q < restarts; ++q){
 
 		pa = state_initialize(f, &step_dict);
 		ge = create_genseq(pa,genes);
 
 		int climbs = 0;
+		int e = 0;
 
 		int search_fresh = 0;
 
 		while(true){
+			// cout << search_fresh << endl;
 
 			search_fresh = search_fresh + 1;
 
@@ -426,76 +429,61 @@ int main(int argc, char const *argv[]){
 			int r;
 
 			// cout << "Neighbor: " << i << endl;
+			int step_size = random(1, step_size_limit);
+			r = random(0,pa.size() - step_size - 1);     //step_size
 
-			r = random(0,pa.size() - 3);     //step_size
-
-			// cout << "Initial Path " << endl;//
-			// matrix ange(&pa[r], &pa[r+3] );//
-			// print_matrix(ange);//
-
-			temp_path = gen_path( pa[r], pa[r+2], &step_dict ); //step_size
-
-			vecofvecs temp_genes( &ge[r], &ge[r+2]); //step_size
-		
-			// cout << "Initial Seq " <<endl;//
-			// print_vecofvecs(temp_genes);//
-
-			temp_cost = total_genes_cost( temp_genes);
-			// cout << "check" << endl;
-			// cout << "Initial Cost: " << temp_cost << endl;//
-
+			temp_path = gen_path( pa[r], pa[r+step_size], &step_dict ); //step_size
+			vecofvecs temp_genes( &ge[r], &ge[r+step_size]); //step_size
+			temp_cost = total_genes_cost(temp_genes);		
 			neighbor temp_neighbor = neighbor( temp_path, remove_dash(temp_genes), temp_cost, r+1);
 
-			climbs = climbs + 1;
+			for (int i = 0; i < check_neighbors; ++i){
+				temp_path = gen_path( pa[r], pa[r+step_size], &step_dict ); //step_size
+				vecofvecs temp_genes( &ge[r], &ge[r+step_size]); //step_size
+				temp_cost = total_genes_cost(temp_genes);
+				neighbor trial_neighbor = neighbor( temp_path, remove_dash(temp_genes), temp_cost, r+1);
 
+				if(trial_neighbor.get_deltacost() < temp_neighbor.get_deltacost() ){
+					temp_neighbor = trial_neighbor;
+				}
+			}
+
+			
+			e = e + 1;
 			if(temp_neighbor.get_deltacost() <= 0){
 				if(temp_neighbor.get_deltacost() == 0 and search_fresh > max_search){
-					// cout << climbs << endl;
 					break;
 				}
 				else if(temp_neighbor.get_deltacost() < 0){
+					climbs = climbs + 1;
 					search_fresh = 0;
 				}
 				else{
 					search_fresh = search_fresh + 1;
 				}
-			
-				// print_matrix(selected_neighbor.get_path());
-				// print_vecofvecs(selected_neighbor.get_genes());
-				// cout << "--------------------------------" <<endl;
 
+				
 				int pos = temp_neighbor.get_position();
 				auto it  = pa.begin() + pos;
-				auto it1 = pa.begin() + pos + 2; //step_size
+				auto it1 = pa.begin() + pos + step_size; //step_size
 				pa.erase(it, it1);
 				auto it2 = ge.begin() + pos - 1;
-				auto it3 = ge.begin() + pos + 1; //step_size
+				auto it3 = ge.begin() + pos + step_size - 1 ; //step_size
 				ge.erase(it2, it3);
-
-				// print_matrix(pa);
-				// print_vecofvecs(ge);
-				// cout << "--------------------------------" <<endl;
-				// cout << pos << endl;
-
 				auto it4  = pa.begin() + pos;
 				auto it5 = ge.begin() + pos - 1; 
 				matrix selected_path  = temp_neighbor.get_path();
 				vecofvecs selected_genes = temp_neighbor.get_genes();  
 				pa.insert(it4, selected_path.begin() + 1, selected_path.end() );
-
 				ge.insert(it5, selected_genes.begin(), selected_genes.end() );
-	
-				// print_matrix(pa);
-				// print_vecofvecs(ge);
-				// cout << "--------------------------------" <<endl;
-
 			}
-		}
 
-		// print_matrix(pa);
-		// print_vecofvecs(ge);
-		// cout << "Final Cost : " << total_genes_cost(ge) << endl;
-		// cout << "Total neighbors  : " << climbs << endl;
+
+		}
+		cout << "Climbs "<< climbs << endl;
+		cout << "Total Steps "<< e << endl;
+		cout << "Cost "<< total_genes_cost(ge)<< endl;
+		cout << "------------------ " << endl;
 
 		if(total_genes_cost(ge) < sol.get_cost()){
 			sol = solution(pa,ge);	
@@ -503,6 +491,7 @@ int main(int argc, char const *argv[]){
 		
 
 	}	
+
 
 	// cout << "--------------------------------" <<endl;
 	vecofvecs final_answer = vertical_to_horizontal(sol.get_genes()); 
@@ -518,9 +507,6 @@ int main(int argc, char const *argv[]){
 	fout.close();
 
 
-
-	// print_vecofvecs(remove_dash2(final_answer));
-	// print_vecofvecs(genes);
 	if(remove_dash2(final_answer) == genes){
 		cout << "Gene Sequence Matched" << endl;
 	}
